@@ -10,8 +10,13 @@ from keras.layers.convolutional import Convolution1D, MaxPooling1D
 from keras.regularizers import l2, l1
 from keras.constraints import maxnorm
 from keras.layers.recurrent import LSTM, GRU
-from keras.callbacks import ModelCheckpoint, EarlyStopping
+from keras.callbacks import ModelCheckpoint, EarlyStopping, Callback
+from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
 
+
+
+#import metrics
+import keras_metrics
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
@@ -22,12 +27,35 @@ sess = tf.Session(config=config)
 set_session(sess)  # set this TensorFlow session as the default session for Keras
 
 
-DATA = 500000
+class Metrics(Callback):
+
+    def on_train_begin(self, logs={}):
+        self.val_f1s = []
+        self.val_recalls = []
+        self.val_precisions = []
+            
+    def on_epoch_end(self, epoch, logs={}):
+        val_predict = (np.asarray(self.model.predict(self.model.validation_data[0]))).round()
+        val_targ = self.model.validation_data[1]
+        _val_f1 = f1_score(val_targ, val_predict)
+        _val_recall = recall_score(val_targ, val_predict)
+        _val_precision = precision_score(val_targ, val_predict)
+        self.val_f1s.append(_val_f1)
+        self.val_recalls.append(_val_recall)
+        self.val_precisions.append(_val_precision)
+        print (" — val_f1: %f — val_precision: %f — val_recall %f" %(_val_f1, _val_precision, _val_recall))
+        return
+                       
+metrcs = Metrics()
+
+
+
+DATA = 4300000
 
 print('loading training data')
-trainmat = h5py.File('../data/train.mat')
-xtr = np.transpose(np.array(trainmat['trainxdata'][:,:,:DATA]), axes=(2,0,1))
-ytr = np.array(trainmat['traindata'][:,:DATA]).T
+trainmat = h5py.File('../data/train_adam.mat')
+xtr = np.transpose(np.array(trainmat['trainxdata'][:,:,DATA:]), axes=(2,0,1))
+ytr = np.array(trainmat['traindata'][:,DATA:]).T
 """
 denom = ytr.shape[0]
 num = np.sum(ytr, axis = 0)
@@ -38,7 +66,7 @@ print(num/denom)
 """
 print('finished loading training data')
 print('loading validation data')
-validmat = scipy.io.loadmat('../data/valid.mat')
+validmat = scipy.io.loadmat('../data/valid_adam.mat')
 
 model = Sequential()
 
@@ -66,7 +94,12 @@ model.add(Activation('relu'))
 model.add(Dense(input_dim=925, units=919))
 model.add(Activation('sigmoid'))
 
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+#precision1 = keras_metrics.precision(label=1)
+#recall1 = keras_metrics.recall(label=1)
+#precision0 = keras_metrics.precision(label=0)
+#recall0 = keras_metrics.recall(label=0)
+
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[metrcs])
 
 checkpointer = ModelCheckpoint(filepath="multiple_adam.hdf5", verbose=1, save_best_only=True)
 earlystopper = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
@@ -79,8 +112,10 @@ model.fit(xtr, ytr, batch_size=100, epochs=60, shuffle=True, validation_data=(np
 
 print(model.summary())
 
-
-
+a = model.predict(xtr[:4], ytr[:4])
+for i in range(40):
+    for j in range(919):
+        print(a[i][j],ytr[i][j])
 
 
 

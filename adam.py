@@ -15,7 +15,7 @@ from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_
 
 
 
-#import metrics
+import metrics
 import keras_metrics
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
@@ -28,29 +28,33 @@ set_session(sess)  # set this TensorFlow session as the default session for Kera
 
 
 class Metrics(Callback):
-
+    def __init__(self):
+        self.val_f1s = []
+        self.val_recalls = []
+        self.val_precisions = []
     def on_train_begin(self, logs={}):
         self.val_f1s = []
         self.val_recalls = []
         self.val_precisions = []
             
     def on_epoch_end(self, epoch, logs={}):
-        val_predict = (np.asarray(self.model.predict(self.model.validation_data[0]))).round()
-        val_targ = self.model.validation_data[1]
-        _val_f1 = f1_score(val_targ, val_predict)
-        _val_recall = recall_score(val_targ, val_predict)
-        _val_precision = precision_score(val_targ, val_predict)
+        val_predict = (np.asarray(self.model.predict(self.validation_data[0]))).round()
+        val_targ = self.validation_data[1]
+        _val_f1 = f1_score(val_targ, val_predict, average = None)
+        _val_recall = recall_score(val_targ, val_predict, average = None)
+        _val_precision = precision_score(val_targ, val_predict, average = None)
         self.val_f1s.append(_val_f1)
         self.val_recalls.append(_val_recall)
         self.val_precisions.append(_val_precision)
-        print (" — val_f1: %f — val_precision: %f — val_recall %f" %(_val_f1, _val_precision, _val_recall))
+        #print(len(_val_precision))
+        print ("-- val_f1: " + str(_val_f1) +" — val_precision: "  + str(_val_precision) + "  — val_recall: " + str(_val_recall))
         return
                        
 metrcs = Metrics()
 
 
 
-DATA = 4300000
+DATA = 2200000
 
 print('loading training data')
 trainmat = h5py.File('../data/train_adam.mat')
@@ -99,23 +103,27 @@ model.add(Activation('sigmoid'))
 #precision0 = keras_metrics.precision(label=0)
 #recall0 = keras_metrics.recall(label=0)
 
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[metrcs])
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 checkpointer = ModelCheckpoint(filepath="multiple_adam.hdf5", verbose=1, save_best_only=True)
 earlystopper = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
 print("model training")
 
 #model.fit(xtr,ytr, batch_size = 512, epochs = 60, shuffle = True)
-model.fit(xtr, ytr, batch_size=100, epochs=60, shuffle=True, validation_data=(np.transpose(validmat['validxdata'],axes=(0,2,1)), validmat['validdata']), callbacks=[checkpointer,earlystopper])
+model.fit(xtr, ytr, batch_size=1000, epochs=60, shuffle=True, validation_data=(np.transpose(validmat['validxdata'],axes=(0,2,1)), validmat['validdata']), callbacks=[checkpointer,earlystopper, metrcs])
 
 
 
-print(model.summary())
+#print(model.summary())
+#vale = np.transpose(validmat['validxdata'],axes=(0,2,1))
+#a = model.predict(vale)
+print(a)
 
+"""
 a = model.predict(xtr[:4], ytr[:4])
 for i in range(40):
     for j in range(919):
         print(a[i][j],ytr[i][j])
-
+"""
 
 

@@ -110,15 +110,16 @@ earlystopper = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
 print("model training")
 
 #model.fit(xtr,ytr, batch_size = 512, epochs = 60, shuffle = True)
-model.fit(xtr, ytr, batch_size=1000, epochs=60, shuffle=True, validation_data=(np.transpose(validmat['validxdata'],axes=(0,2,1)), validmat['validdata']), callbacks=[checkpointer,earlystopper, metrcs])
+#model.fit(xtr, ytr, batch_size=1000, epochs=60, shuffle=True, validation_data=(np.transpose(validmat['validxdata'],axes=(0,2,1)), validmat['validdata']), callbacks=[checkpointer,earlystopper, metrcs])
 
 
 
 #print(model.summary())
 #vale = np.transpose(validmat['validxdata'],axes=(0,2,1))
 #a = model.predict(vale)
-print(a)
-
+#print(a)
+from keras.utils import plot_model
+plot_model(model, to_file='model.png')
 """
 a = model.predict(xtr[:4], ytr[:4])
 for i in range(40):

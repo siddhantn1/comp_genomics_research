@@ -104,21 +104,21 @@ validmat = scipy.io.loadmat('../data/valid_adam.mat')
 
 # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-# checkpointer = ModelCheckpoint(filepath="multiple_adam.hdf5", verbose=1, save_best_only=True)
-# earlystopper = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
+checkpointer = ModelCheckpoint(filepath="multiple_adam_other.hdf5", verbose=1, save_best_only=True)
+earlystopper = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
 # print("model training")
 
 
-model = load_model('my_model.h5')
+model = load_model('multiple_adam.hdf5')
 #xtr,ytr, batch_size = 512, epochs = 60, shuffle = True)
-model.fit(xtr, ytr, batch_size=1000, epochs=60, shuffle=True, validation_data=(np.transpose(validmat['validxdata'],axes=(0,2,1)), validmat['validdata']), callbacks=[checkpointer,earlystopper, metrcs])
+model.fit(xtr, ytr, batch_size=1024, epochs=60, shuffle=True, validation_data=(np.transpose(validmat['validxdata'],axes=(0,2,1)), validmat['validdata']), callbacks=[checkpointer,earlystopper, metrcs])
 
 
 
 #print(model.summary())
 #vale = np.transpose(validmat['validxdata'],axes=(0,2,1))
 #a = model.predict(vale)
-print(a)
+#print(a)
 
 """
 a = model.predict(xtr[:4], ytr[:4])
